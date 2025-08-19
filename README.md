@@ -7,6 +7,8 @@ Install dependencies:
 uv sync
 ```
 
+You don't need to run the server unless you will interface with it directly. Claude Desktop is capable of hosting it by itself.
+
 ### Claude Desktop
 
 1. Get your Mochi API key from your "Account settings" in the Mochi app.
