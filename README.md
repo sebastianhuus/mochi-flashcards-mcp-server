@@ -45,3 +45,8 @@ You don't need to run the server unless you will interface with it directly. Cla
 - **`mochi_get_card`** - Get details of a specific card by its ID
 - **`mochi_update_card`** - Update card content, move between decks, or archive/unarchive cards
 - **`mochi_delete_card`** - Permanently delete a card by its ID
+
+## Available Prompts
+
+(You can use these in Claude Desktop using the + symbol in the chat bar)
+- **create_two_sided_flashcard** - Creates a very simple flashcard with back/front divided by a triple dash `---`. This requires you set up a deck called "Claude Mochi Cards". Claude will search for this deck and add the card to it. 
