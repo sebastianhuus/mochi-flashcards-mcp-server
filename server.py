@@ -181,6 +181,38 @@ async def mochi_delete_card(card_id: str) -> str:
 
     return f"Card {card_id} deleted successfully"
 
+@mcp.prompt()
+async def create_two_sided_flashcard(question: str) -> str:
+    """Create a two-sided flashcard in Mochi from a question/prompt.
+    
+    This prompt helps you create a two-sided flashcard where the AI generates both the front 
+    and back content from the given question/prompt, then adds it to the "Claude Mochi Cards" deck.
+    
+    Args:
+        question: The question, topic, or prompt for the flashcard content
+    """
+    
+    return f"""Please create a two-sided flashcard for the question/topic: "{question}"
+
+Steps to follow:
+1. First, use the mochi_list_decks tool to find all available decks
+2. Look for a deck named exactly "Claude Mochi Cards" and get its ID
+3. If the "Claude Mochi Cards" deck is not found, tell the user: "Please create a deck named 'Claude Mochi Cards' in your Mochi app first. I can only add cards to existing decks, not create new decks."
+4. If the deck is found, generate appropriate front and back content for the flashcard based on the question/topic. Follow flashcard best practices:
+   - Keep it short and memorable
+   - Focus on ONE idea per card
+   - Use clear, concise language
+   - Make the front a specific question and the back a brief answer
+   - If the user question implies the use of multiple cards, you should ask them to confirm before proceeding to make multiple cards for the user. 
+5. Use the mochi_create_card tool with:
+   - deck_id: (the ID you found for "Claude Mochi Cards")
+   - content: [front content]
+---
+[back content]
+   - tags: (optional, add relevant tags if appropriate)
+
+The content should be formatted with the front and back separated by triple dashes (---) which is the standard Mochi two-sided card format."""
+
 
 if __name__ == "__main__":
     mcp.run(transport="stdio")
