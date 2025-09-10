@@ -182,5 +182,55 @@ async def mochi_delete_card(card_id: str) -> str:
     return f"Card {card_id} deleted successfully"
 
 
+@mcp.tool()
+async def mochi_list_cards(deck_id: str | None = None, limit: int = 10, bookmark: str | None = None) -> str:
+    """List cards, optionally filtered by deck.
+
+    Args:
+        deck_id: Optional deck ID to filter cards by
+        limit: Number of cards per page (1-100, default 10)
+        bookmark: Optional bookmark for pagination
+    """
+    url = f"{MOCHI_API_BASE}/cards"
+    params = []
+    
+    if deck_id:
+        params.append(f"deck-id={deck_id}")
+    if limit != 10:
+        params.append(f"limit={limit}")
+    if bookmark:
+        params.append(f"bookmark={bookmark}")
+    
+    if params:
+        url += "?" + "&".join(params)
+
+    response = await make_mochi_request(url)
+
+    if not response or "error" in response:
+        return f"Error fetching cards: {response.get('error', 'Unknown error')}"
+
+    cards = response.get("docs", [])
+    result = f"Cards {'for deck ' + deck_id if deck_id else ''}:\n\n"
+
+    for card in cards:
+        result += f"ID: {card.get('id')}\n"
+        result += f"Name: {card.get('name', 'Untitled')}\n"
+        result += f"Deck ID: {card.get('deck-id')}\n"
+        
+        content = card.get('content', '')
+        content_preview = content[:100] + '...' if len(content) > 100 else content
+        result += f"Content: {content_preview}\n"
+        
+        if card.get('tags'):
+            result += f"Tags: {', '.join(card.get('tags'))}\n"
+        
+        result += f"Created: {card.get('created-at', {}).get('date')}\n\n"
+
+    if response.get("bookmark"):
+        result += f"More cards available. Use bookmark: {response.get('bookmark')}"
+
+    return result
+
+
 if __name__ == "__main__":
     mcp.run(transport="stdio")

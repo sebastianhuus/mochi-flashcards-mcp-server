@@ -41,6 +41,7 @@ You don't need to run the server unless you will interface with it directly. Cla
 ## Available Tools
 
 - **`mochi_list_decks`** - List all decks in your account (with optional pagination)
+- **`mochi_list_cards`** - List cards, optionally filtered by deck ID (with pagination and configurable limit)
 - **`mochi_create_card`** - Create a new card in a specific deck with content and optional tags
 - **`mochi_get_card`** - Get details of a specific card by its ID
 - **`mochi_update_card`** - Update card content, move between decks, or archive/unarchive cards
