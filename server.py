@@ -232,5 +232,184 @@ async def mochi_list_cards(deck_id: str | None = None, limit: int = 10, bookmark
     return result
 
 
+async def _fetch_all_cards(deck_id: str | None = None) -> list[dict] | None:
+    """Helper function to fetch all cards from Mochi API via pagination.
+    
+    Args:
+        deck_id: Optional deck ID to filter cards by
+        
+    Returns:
+        List of all cards, or None if error occurred
+    """
+    all_cards = []
+    bookmark = None
+    
+    while True:
+        url = f"{MOCHI_API_BASE}/cards"
+        params = []
+        
+        if deck_id:
+            params.append(f"deck-id={deck_id}")
+        params.append("limit=100")  # Use max limit for efficiency
+        if bookmark:
+            params.append(f"bookmark={bookmark}")
+            
+        if params:
+            url += "?" + "&".join(params)
+            
+        response = await make_mochi_request(url)
+        
+        if not response or "error" in response:
+            return None
+            
+        cards = response.get("docs", [])
+        all_cards.extend(cards)
+        
+        # Check if there are more pages
+        new_bookmark = response.get("bookmark")
+        if not new_bookmark or new_bookmark == bookmark or len(cards) == 0:
+            break
+        bookmark = new_bookmark
+            
+    return all_cards
+
+
+@mcp.tool()
+async def mochi_search_cards_by_tags(
+    tags_any: list = None,
+    tags_all: list = None, 
+    tags_exclude: list = None,
+    deck_id: str = None,
+    case_sensitive: bool = False
+) -> str:
+    """Search cards by tags with flexible filtering options.
+    
+    WARNING: This function fetches ALL cards and filters client-side, which may be slow
+    for large card collections.
+    
+    Args:
+        tags_any: Cards that have ANY of these tags (OR logic)
+        tags_all: Cards that have ALL of these tags (AND logic)
+        tags_exclude: Cards that do NOT have any of these tags
+        deck_id: Optional deck ID to limit search scope
+        case_sensitive: Whether tag matching should be case sensitive
+        
+    Returns:
+        Formatted string of matching cards
+    """
+    if not any([tags_any, tags_all, tags_exclude]):
+        return "Error: At least one tag filter parameter must be provided"
+        
+    all_cards = await _fetch_all_cards(deck_id)
+    
+    if all_cards is None:
+        return "Error fetching cards for tag search"
+        
+    matching_cards = []
+    
+    for card in all_cards:
+        card_tags = card.get("tags", [])
+        
+        if not case_sensitive:
+            card_tags = [tag.lower() for tag in card_tags]
+            compare_tags_any = [tag.lower() for tag in (tags_any or [])]
+            compare_tags_all = [tag.lower() for tag in (tags_all or [])]
+            compare_tags_exclude = [tag.lower() for tag in (tags_exclude or [])]
+        else:
+            compare_tags_any = tags_any or []
+            compare_tags_all = tags_all or []
+            compare_tags_exclude = tags_exclude or []
+            
+        card_tag_set = set(card_tags)
+        
+        # Check exclusion filter first
+        if tags_exclude and any(tag in card_tag_set for tag in compare_tags_exclude):
+            continue
+            
+        # Check if card matches ANY tags requirement
+        if tags_any and not any(tag in card_tag_set for tag in compare_tags_any):
+            continue
+            
+        # Check if card matches ALL tags requirement
+        if tags_all and not all(tag in card_tag_set for tag in compare_tags_all):
+            continue
+            
+        matching_cards.append(card)
+        
+    # Format results using same format as mochi_list_cards
+    filter_desc = []
+    if tags_any:
+        filter_desc.append(f"ANY of: {', '.join(tags_any)}")
+    if tags_all:
+        filter_desc.append(f"ALL of: {', '.join(tags_all)}")
+    if tags_exclude:
+        filter_desc.append(f"EXCLUDING: {', '.join(tags_exclude)}")
+        
+    result = f"Cards matching tags ({' AND '.join(filter_desc)}):\n"
+    result += f"Found {len(matching_cards)} cards\n\n"
+    
+    for card in matching_cards:
+        result += f"ID: {card.get('id')}\n"
+        result += f"Name: {card.get('name', 'Untitled')}\n"
+        result += f"Deck ID: {card.get('deck-id')}\n"
+        
+        content = card.get('content', '')
+        content_preview = content[:100] + '...' if len(content) > 100 else content
+        result += f"Content: {content_preview}\n"
+        
+        if card.get('tags'):
+            result += f"Tags: {', '.join(card.get('tags'))}\n"
+            
+        result += f"Created: {card.get('created-at', {}).get('date')}\n\n"
+        
+    return result
+
+
+@mcp.tool()
+async def mochi_list_all_tags(deck_id: str = None, include_counts: bool = True) -> str:
+    """List all unique tags across user's cards.
+    
+    WARNING: This function fetches ALL cards to extract tags, which may be slow
+    for large card collections.
+    
+    Args:
+        deck_id: Optional deck ID to limit tag extraction to specific deck
+        include_counts: Whether to include usage counts for each tag
+        
+    Returns:
+        Formatted string of all tags with optional usage counts
+    """
+    all_cards = await _fetch_all_cards(deck_id)
+    
+    if all_cards is None:
+        return "Error fetching cards for tag listing"
+        
+    tag_counts = {}
+    
+    for card in all_cards:
+        card_tags = card.get("tags", [])
+        for tag in card_tags:
+            tag_counts[tag] = tag_counts.get(tag, 0) + 1
+            
+    if not tag_counts:
+        scope = f" in deck {deck_id}" if deck_id else ""
+        return f"No tags found{scope}"
+        
+    # Sort tags by usage count (descending) then alphabetically
+    sorted_tags = sorted(tag_counts.items(), key=lambda x: (-x[1], x[0].lower()))
+    
+    scope = f" in deck {deck_id}" if deck_id else ""
+    result = f"All tags{scope} ({len(sorted_tags)} unique tags):\n\n"
+    
+    if include_counts:
+        for tag, count in sorted_tags:
+            result += f"{tag}: {count} cards\n"
+    else:
+        for tag, _ in sorted_tags:
+            result += f"{tag}\n"
+            
+    return result
+
+
 if __name__ == "__main__":
     mcp.run(transport="stdio")
