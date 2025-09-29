@@ -46,3 +46,6 @@ You don't need to run the server unless you will interface with it directly. Cla
 - **`mochi_get_card`** - Get details of a specific card by its ID
 - **`mochi_update_card`** - Update card content, move between decks, or archive/unarchive cards
 - **`mochi_delete_card`** - Permanently delete a card by its ID
+
+# Credits
+Kudos to [d42me](https://github.com/d42me/mochi-flashcards-mcp-server) for the original repo this was forked from. It was a bit inactive so I did my own spin on this
