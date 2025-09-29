@@ -40,6 +40,16 @@ You don't need to run the server unless you will interface with it directly. Cla
 
 ## Available Tools
 
+* **`mochi_list_decks`** - List all decks in your account (with optional pagination)
+* **`mochi_list_cards`** - List cards, optionally filtered by deck ID (with pagination and configurable limit)
+* **`mochi_create_card`** - Create a new card in a specific deck with content and optional tags
+* **`mochi_get_card`** - Get details of a specific card by its ID
+* **`mochi_update_card`** - Update card content, move between decks, or archive/unarchive cards
+* **`mochi_delete_card`** - Permanently delete a card by its ID
+* **`mochi_search_cards_by_tags`** - Search cards by tags with flexible filtering (any, all, exclude, deck, case sensitivity). Finds cards with manual or content-based tags. (Client-side filtering, may be slow for large collections)
+* **`mochi_list_all_tags`** - List all unique tags across your cards, optionally scoped to a deck. Can include usage counts for each tag.
+* **`mochi_analyze_card_tags`** - Analyze a card's tags to show which come from content hashtags vs manual tags. Explains how to remove each type.
+* **`mochi_remove_content_tags`** - Remove tags from a card by editing its content to remove hashtags. Updates the card content accordingly.
 - **`mochi_list_decks`** - List all decks in your account (with optional pagination)
 - **`mochi_list_cards`** - List cards, optionally filtered by deck ID (with pagination and configurable limit)
 - **`mochi_create_card`** - Create a new card in a specific deck with content and optional tags

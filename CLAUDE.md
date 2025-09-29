@@ -18,6 +18,8 @@ Run the server directly (for testing):
 uv run python server.py
 ```
 
+ALWAYS use UV to run python and python-related commands.
+
 ## Architecture
 
 The project is built on FastMCP framework and consists of:
