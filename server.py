@@ -72,7 +72,7 @@ async def mochi_list_decks(bookmark: str = None) -> str:
 
 
 @mcp.tool()
-async def mochi_create_card(deck_id: str, content: str, tags: list = None) -> str:
+async def mochi_create_card(deck_id: str, content: str, tags: list[str] | None = None) -> str:
     """Create a new card in a Mochi deck.
 
     Args:
@@ -129,7 +129,7 @@ async def mochi_update_card(
     content: str = None,
     deck_id: str = None,
     archived: bool = None,
-    tags: list = None,
+    tags: list[str] | None = None,
 ) -> str:
     """Update an existing Mochi card.
 
@@ -283,9 +283,9 @@ async def _fetch_all_cards(deck_id: str | None = None) -> list[dict] | None:
 
 @mcp.tool()
 async def mochi_search_cards_by_tags(
-    tags_any: list = None,
-    tags_all: list = None, 
-    tags_exclude: list = None,
+    tags_any: list[str] | None = None,
+    tags_all: list[str] | None = None, 
+    tags_exclude: list[str] | None = None,
     deck_id: str = None,
     case_sensitive: bool = False
 ) -> str:
@@ -378,7 +378,7 @@ async def mochi_search_cards_by_tags(
 
 
 @mcp.tool()
-async def mochi_list_all_tags(deck_id: str = None, include_counts: bool = True) -> str:
+async def mochi_list_all_tags(deck_id: str | None = None, include_counts: bool = True) -> str:
     """List all unique tags across user's cards.
     
     WARNING: This function fetches ALL cards to extract tags, which may be slow
@@ -483,7 +483,7 @@ async def mochi_analyze_card_tags(card_id: str) -> str:
 
 
 @mcp.tool()
-async def mochi_remove_content_tags(card_id: str, tags_to_remove: list) -> str:
+async def mochi_remove_content_tags(card_id: str, tags_to_remove: list[str]) -> str:
     """Remove tags from a card by editing its content to remove hashtags.
     
     This function will fetch the card, remove specified hashtags from content,
@@ -508,11 +508,13 @@ async def mochi_remove_content_tags(card_id: str, tags_to_remove: list) -> str:
     # Remove specified hashtags from content
     for tag in tags_to_remove:
         # Remove hashtag patterns (case insensitive, with word boundaries)
-        pattern = rf'#\b{re.escape(tag)}\b'
+        pattern = rf'(?<![\w#])#{re.escape(tag)}(?![\w-])'
         content = re.sub(pattern, '', content, flags=re.IGNORECASE)
     
-    # Clean up extra whitespace
-    content = re.sub(r'\s+', ' ', content.strip())
+    # Clean up extra whitespace: trim leading/trailing spaces and collapse multiple spaces within lines, but preserve line breaks
+    content = "\n".join(
+        re.sub(r' +', ' ', line.strip()) for line in content.strip().splitlines()
+    )
     
     if content == original_content:
         return f"No hashtags found to remove for tags: {', '.join(tags_to_remove)}"
